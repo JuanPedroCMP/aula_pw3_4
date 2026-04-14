@@ -15,63 +15,38 @@ namespace aula_4.Controllers
         //    return View(lista);
         //}
 
-        private void IniciarLista()
-        {
-            var listaReserva = new List<Pessoa> {
-                    new() { Nome = "Helder", Idade = 115 },
-                    new() { Nome = "Alex", Idade = 35 },
-                    new() { Nome = "Benir", Idade = 18 },
-                };
-
-            var lista = Ler();
-
-            if (lista.Count == 0) { 
-                Gravar(listaReserva);
-            }
-        }
-
-        private void Gravar(List<Pessoa> ListPessoa)
-        {
-            string pessoas = JsonConvert.SerializeObject(ListPessoa);
-            HttpContext.Session.SetString("pessoas", pessoas);
-
-            return;
-        }
-
         private List<Pessoa> Ler()
         {
-            var lista = new List<Pessoa>();
-
-            Gravar(lista);
-
-            var pessoaReserva = Pessoa.Lista;
-
-
+            List<Pessoa> lista;
             string pessoas = HttpContext.Session.GetString("pessoas");
 
-            if (pessoas == "[]")
+            if (String.IsNullOrEmpty(pessoas))
+                lista = IniciarLista();
+            else
             {
-                pessoas = JsonConvert.SerializeObject(pessoaReserva);
-            }
-
-            try
-            {
-                lista = JsonConvert.DeserializeObject<List<Pessoa>>(pessoas); // erro aqui
-
-                if (lista.Count == 0) {
+                lista = JsonConvert.DeserializeObject<List<Pessoa>>(pessoas);
+                if (lista.Count == 0)
                     IniciarLista();
-                  Ler();
-                }
             }
-            catch {
-                IniciarLista();
-               Ler();
-            }
-           
-
 
             return lista;
         }
+
+        private List<Pessoa> IniciarLista()
+        {
+            List<Pessoa> lista = Pessoa.Lista;
+            Gravar(lista);
+            return lista;
+        }
+
+        private void Gravar(List<Pessoa> lista)
+        {
+            string pessoas = JsonConvert.SerializeObject(lista);
+            HttpContext.Session.SetString("pessoas", pessoas);
+        }
+
+        /// ///////////////////////////////////////
+
 
         public ActionResult Index()
         { 
@@ -82,7 +57,8 @@ namespace aula_4.Controllers
         // GET: PessoaController/Details/5
         public ActionResult Details(int id)
         {
-            return View(Pessoa.Lista[id]);
+            var lista = Ler();
+            return View(lista[id]);
         }
 
         // GET: PessoaController/Create
@@ -94,28 +70,7 @@ namespace aula_4.Controllers
         // POST: PessoaController/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public ActionResult Create(IFormCollection collection)
-        {
-            try
-            {
-                return RedirectToAction(nameof(Index));
-            }
-            catch
-            {
-                return View();
-            }
-        }
-
-        // GET: PessoaController/Edit/5
-        public ActionResult Edit(int id)
-        {
-            return View();
-        }
-
-        // POST: PessoaController/Edit/5
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public ActionResult Edit(int id,  Pessoa pessoa)
+        public ActionResult Create(Pessoa pessoa)
         {
             try
             {
@@ -130,19 +85,47 @@ namespace aula_4.Controllers
             }
         }
 
+        // GET: PessoaController/Edit/5
+        public ActionResult Edit(int id)
+        {
+            return View(Ler()[id]);
+        }
+
+        // POST: PessoaController/Edit/5
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public ActionResult Edit(int id,  Pessoa pessoa)
+        {
+            try
+            {
+                var lista = Ler();
+                lista[id] = pessoa;
+                Gravar(lista);
+                return RedirectToAction(nameof(Index));
+            }
+            catch
+            {
+                return View();
+            }
+        }
+
         // GET: PessoaController/Delete/5
         public ActionResult Delete(int id)
         {
-            return View();
+            var lista = Ler();
+            return View(lista[id]);
         }
 
         // POST: PessoaController/Delete/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public ActionResult Delete(int id, IFormCollection collection)
+        public ActionResult Delete(int id, Pessoa pessoa)
         {
             try
             {
+                var lista = Ler();  
+                lista.RemoveAt(id);
+                Gravar(lista);
                 return RedirectToAction(nameof(Index));
             }
             catch
